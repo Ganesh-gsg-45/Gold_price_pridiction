@@ -1,0 +1,293 @@
+/* Modern Gold Theme */
+:root {
+    --gold-primary: #FFD700;
+    --gold-secondary: #FFA500;
+    --gold-dark: #B8860B;
+    --text-primary: #2C3E50;
+    --text-secondary: #7F8C8D;
+    --bg-primary: #F8F9FA;
+    --bg-secondary: #FFFFFF;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #E8F4F8 100%);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px 0;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: var(--gold-dark);
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.main-content {
+    display: grid;
+    gap: 30px;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Cards */
+.live-price-card, .prediction-controls {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    border: 2px solid var(--gold-primary);
+}
+
+.live-price-card h2, .prediction-controls h2 {
+    color: var(--gold-dark);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Live Prices */
+#live-prices {
+    font-family: 'Courier New', monospace;
+}
+
+.price-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border-left: 4px solid var(--gold-primary);
+}
+
+.price-label {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.price-value {
+    font-weight: bold;
+    color: var(--gold-dark);
+    font-size: 1.1rem;
+}
+
+.source-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--gold-primary);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#karat-select {
+    padding: 10px 15px;
+    border: 2px solid var(--gold-primary);
+    border-radius: 8px;
+    background: white;
+    font-size: 1rem;
+    min-width: 200px;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--gold-primary), var(--gold-secondary));
+    color: var(--text-primary);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Predictions */
+.predictions-container {
+    margin-top: 20px;
+}
+
+.prediction-results h3 {
+    color: var(--gold-dark);
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+#prediction-list {
+    display: grid;
+    gap: 10px;
+}
+
+.prediction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border-left: 4px solid var(--gold-secondary);
+    transition: transform 0.2s ease;
+}
+
+.prediction-item:hover {
+    transform: translateX(5px);
+}
+
+.prediction-date {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.prediction-value {
+    font-weight: bold;
+    color: var(--gold-dark);
+    font-size: 1.1rem;
+}
+
+.prediction-change {
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.change-positive {
+    background: #D4EDDA;
+    color: #155724;
+}
+
+.change-negative {
+    background: #F8D7DA;
+    color: #721C24;
+}
+
+/* Loading and States */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+}
+
+.loading i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: var(--gold-primary);
+}
+
+.hidden {
+    display: none;
+}
+
+.error {
+    background: #F8D7DA;
+    color: #721C24;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #F5C6CB;
+    margin: 10px 0;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #karat-select {
+        min-width: auto;
+    }
+
+    .price-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.live-price-card, .prediction-controls, .prediction-item {
+    animation: fadeIn 0.5s ease-out;
+}

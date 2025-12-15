@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Price Predictor - Live Market Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-coins"></i> Gold Price Predictor</h1>
+            <p>Real-time market data with AI-powered predictions</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Live Prices Card -->
+            <div class="live-price-card">
+                <h2><i class="fas fa-bolt"></i> Live Market Prices</h2>
+                <div id="live-prices" class="loading">
+                    <div><i class="fas fa-spinner fa-spin"></i></div>
+                    <div>Loading live gold prices...</div>
+                </div>
+            </div>
+
+            <!-- Prediction Controls Card -->
+            <div class="prediction-controls">
+                <h2><i class="fas fa-chart-line"></i> Price Predictions</h2>
+                <p>Get AI-powered gold price predictions starting from live market data</p>
+
+                <div class="controls">
+                    <select id="karat-select">
+                        <option value="24K">24 Karat (100% Pure)</option>
+                        <option value="22K">22 Karat (91.6% Pure)</option>
+                        <option value="18K">18 Karat (75% Pure)</option>
+                        <option value="14K">14 Karat (58.3% Pure)</option>
+                    </select>
+                    <button id="predict-btn" class="btn-primary">
+                        <i class="fas fa-chart-line"></i> Get Predictions
+                    </button>
+                </div>
+
+                <div id="prediction-results" class="predictions-container hidden">
+                    <!-- Predictions will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section" style="margin-top: 50px; text-align: center;">
+            <h2 style="color: var(--gold-dark); margin-bottom: 30px;"><i class="fas fa-star"></i> Why Choose Our Predictor?</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px;">
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 2px solid var(--gold-primary);">
+                    <i class="fas fa-sync-alt" style="font-size: 2rem; color: var(--gold-primary); margin-bottom: 15px;"></i>
+                    <h3 style="color: var(--gold-dark); margin-bottom: 10px;">Live Market Data</h3>
+                    <p style="color: var(--text-secondary);">Real-time gold prices from reliable market sources</p>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 2px solid var(--gold-primary);">
+                    <i class="fas fa-brain" style="font-size: 2rem; color: var(--gold-primary); margin-bottom: 15px;"></i>
+                    <h3 style="color: var(--gold-dark); margin-bottom: 10px;">AI Predictions</h3>
+                    <p style="color: var(--text-secondary);">Advanced machine learning algorithms for accurate forecasting</p>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 2px solid var(--gold-primary);">
+                    <i class="fas fa-mobile-alt" style="font-size: 2rem; color: var(--gold-primary); margin-bottom: 15px;"></i>
+                    <h3 style="color: var(--gold-dark); margin-bottom: 10px;">Responsive Design</h3>
+                    <p style="color: var(--text-secondary);">Works perfectly on desktop, tablet, and mobile devices</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p style="margin-top: 10px;">
+                <i class="fas fa-code"></i> Built with Flask & Machine Learning |
+                <i class="fas fa-chart-bar"></i> Real-time Analytics
+            </p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
