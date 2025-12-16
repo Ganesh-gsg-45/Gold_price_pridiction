@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
-from gold_predict import GoldPricePredictor
-from live_price import LiveGoldPriceService
+from backend.models.gold_predict import GoldPricePredictor
+from backend.models.live_price import LiveGoldPriceService
 
 app = Flask(__name__)
 CORS(app)

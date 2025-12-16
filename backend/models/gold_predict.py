@@ -1,4 +1,4 @@
-from live_price import LiveGoldPriceService
+from backend.models.live_price import LiveGoldPriceService
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -8,6 +8,8 @@ from sklearn.ensemble import RandomForestRegressor
 class GoldPricePredictor:
     def __init__(self):
         self.model = None
+        self.scaler_X = MinMaxScaler()
+        self.scaler_y = MinMaxScaler()
         self.gold_purities = {
             '24K': 1.0,
             '22K': 0.916,
