@@ -23,15 +23,20 @@ def create_app(config_name='default'):
     def index():
         return render_template('index.html')
     
+    # Calculator route
+    @app.route('/calculator')
+    def calculator():
+        return render_template('calculator.html')
+
     # Error handlers
     @app.errorhandler(404)
     def not_found(error):
         return {'error': 'Not found'}, 404
-    
+
     @app.errorhandler(500)
     def internal_error(error):
         return {'error': 'Internal server error'}, 500
-    
+
     return app
 
 if __name__ == '__main__':

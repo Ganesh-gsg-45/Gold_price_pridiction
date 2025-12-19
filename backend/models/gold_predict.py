@@ -1,4 +1,4 @@
-from backend.models.live_price import LiveGoldPriceService
+from .live_price import LiveGoldPriceService
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -178,6 +178,42 @@ if __name__ == "__main__":
     predictor = GoldPricePredictor()
     result = predictor.get_predictions()
     if result:
-        print("✅ Successfully generated gold price predictions!")
+        print(" Successfully generated gold price predictions!")
     else:
-        print("❌ Failed to generate predictions.")
+        print(" Failed to generate predictions.")
+def get_predictions(self, karat_type='24K'):
+    print(f"\n{'='*50}")
+    print(f"Gold Price Prediction - {karat_type}")
+    print(f"{'='*50}\n")
+
+    df = self.fetch_gold_data(days=180)
+    df_features = self.create_features(df)
+    self.train_model(df_features)
+
+    predictions_24k = self.predict_next_days(df_features, days=5)
+    today_price_24k = df['Price_Per_Gram'].iloc[-1]
+
+    today_price = self.convert_to_karat(today_price_24k, karat_type)
+    predictions = [self.convert_to_karat(p, karat_type) for p in predictions_24k]
+
+    self.save_today_price(karat_type, today_price)
+    self.save_predictions(karat_type, predictions)
+
+    print(f"\n TODAY ({datetime.now().strftime('%Y-%m-%d')})")
+    print(f"   Price: ${today_price:.2f}/gram\n")
+
+    print(" NEXT 5 DAYS:")
+    for i, pred in enumerate(predictions, 1):
+        date = (datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d')
+        change = pred - today_price
+        change_pct = (change / today_price) * 100
+        arrow = "↑" if change > 0 else "↓"
+        print(f"   Day {i} ({date}): ${pred:.2f} {arrow} {change_pct:+.2f}%")
+
+    print(f"\n{'='*50}\n")
+
+    return {
+        'karat_type': karat_type,
+        'today_price': round(today_price, 2),
+        'predictions': [round(p, 2) for p in predictions]
+    }

@@ -1,0 +1,249 @@
+
+</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold Price Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .calculator-page {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .calc-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px solid var(--gold-primary);
+        }
+
+        .calc-title {
+            font-size: 2em;
+            color: var(--gold-dark);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .quick-calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-calc-item {
+            background: var(--bg-primary);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .quick-calc-item:hover {
+            border-color: var(--gold-primary);
+            transform: scale(1.05);
+        }
+
+        .weight-label {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .price-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--gold-dark);
+        }
+
+        .custom-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .custom-input-group input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid var(--gold-primary);
+            border-radius: 8px;
+            font-size: 1.1em;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: var(--gold-primary);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .nav-link:hover {
+            background: var(--gold-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container calculator-page">
+        <a href="/" class="nav-link">← Back to Dashboard</a>
+        
+        <div class="calc-card">
+            <h1 class="calc-title">💰 Gold Price Calculator</h1>
+            
+            <!-- Karat Selector -->
+            <div class="karat-selector" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 30px;">
+                <div class="karat-btn active" data-karat="24K">
+                    <div style="font-size: 1.5em;">🥇</div>
+                    <div style="font-weight: bold;">24K</div>
+                    <div style="font-size: 0.85em;">99.9%</div>
+                </div>
+                <div class="karat-btn" data-karat="22K">
+                    <div style="font-size: 1.5em;">🥈</div>
+                    <div style="font-weight: bold;">22K</div>
+                    <div style="font-size: 0.85em;">91.6%</div>
+                </div>
+                <div class="karat-btn" data-karat="18K">
+                    <div style="font-size: 1.5em;">🥉</div>
+                    <div style="font-weight: bold;">18K</div>
+                    <div style="font-size: 0.85em;">75.0%</div>
+                </div>
+                <div class="karat-btn" data-karat="14K">
+                    <div style="font-size: 1.5em;">⭐</div>
+                    <div style="font-weight: bold;">14K</div>
+                    <div style="font-size: 0.85em;">58.3%</div>
+                </div>
+            </div>
+
+            <!-- Current Rate -->
+            <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 30px;">
+                <div style="opacity: 0.9; margin-bottom: 10px;">Current Rate (<span id="selectedKarat">24K</span>)</div>
+                <div style="font-size: 3em; font-weight: bold;" id="currentRate">₹0.00</div>
+                <div style="opacity: 0.9;">per gram</div>
+            </div>
+
+            <!-- Quick Weights -->
+            <h3 style="color: var(--gold-dark); margin-bottom: 15px;">Quick Calculator</h3>
+            <div class="quick-calc-grid" id="quickWeights"></div>
+
+            <!-- Custom Weight -->
+            <h3 style="color: var(--gold-dark); margin: 30px 0 15px;">Custom Weight</h3>
+            <div class="custom-input-group">
+                <input type="number" id="customWeight" placeholder="Enter weight in grams" min="0" step="0.1">
+                <button class="btn-primary" onclick="calculateCustom()">Calculate</button>
+            </div>
+
+            <div id="customResult" style="display: none; padding: 20px; background: var(--bg-primary); border-radius: 12px; border-left: 5px solid var(--gold-primary); margin-top: 20px;">
+                <h4 style="color: var(--gold-dark); margin-bottom: 15px;">Result</h4>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div>
+                        <div style="color: #666; font-size: 0.9em;">Weight</div>
+                        <div style="font-size: 1.3em; font-weight: bold; color: var(--gold-dark);" id="resultWeight">0g</div>
+                    </div>
+                    <div>
+                        <div style="color: #666; font-size: 0.9em;">Total Amount</div>
+                        <div style="font-size: 1.8em; font-weight: bold; color: #27ae60;" id="resultTotal">₹0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedKarat = '24K';
+        let priceData = {};
+        const quickWeights = [1, 5, 10, 20, 50, 100];
+
+        // Load prices on page load
+        async function loadPrices() {
+            try {
+                const response = await fetch('/api/all-prices');
+                const data = await response.json();
+                if (data.success) {
+                    Object.entries(data.data.prices).forEach(([karat, info]) => {
+                        priceData[karat] = info.price_per_gram;
+                    });
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Setup karat selector
+        document.querySelectorAll('.karat-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.karat-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedKarat = this.dataset.karat;
+                updateDisplay();
+            });
+        });
+
+        function updateDisplay() {
+            const price = priceData[selectedKarat] || 0;
+            document.getElementById('currentRate').textContent = `₹${price.toFixed(2)}`;
+            document.getElementById('selectedKarat').textContent = selectedKarat;
+            updateQuickWeights();
+        }
+
+        function updateQuickWeights() {
+            const price = priceData[selectedKarat] || 0;
+            const container = document.getElementById('quickWeights');
+            container.innerHTML = quickWeights.map(weight => {
+                const total = price * weight;
+                return `
+                    <div class="quick-calc-item">
+                        <div class="weight-label">${weight}g</div>
+                        <div class="price-display">₹${total.toLocaleString('en-IN', {maximumFractionDigits: 0})}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function calculateCustom() {
+            const weight = parseFloat(document.getElementById('customWeight').value);
+            if (!weight || weight <= 0) {
+                alert('Please enter a valid weight');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/calculator?karat=${selectedKarat}&weight=${weight}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('resultWeight').textContent = `${data.data.weight}g`;
+                    document.getElementById('resultTotal').textContent = `₹${data.data.total_price.toLocaleString('en-IN')}`;
+                    document.getElementById('customResult').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Load prices on page load
+        loadPrices();
+
+        // Enter key to calculate
+        document.getElementById('customWeight').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') calculateCustom();
+        });
+    </script>
+</body>
+</html>
+<div style="text-align: center; margin: 20px 0;">
+    <a href="/calculator" style="display: inline-block; padding: 12px 30px; background: linear-gradient(45deg, var(--gold-primary), var(--gold-secondary)); color: var(--text-primary); text-decoration: none; border-radius: 12px; font-weight: bold; transition: all 0.3s;">
+        🧮 Gold Price Calculator
+    </a>

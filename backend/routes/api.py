@@ -9,9 +9,9 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, project_root)
 
 from flask import Blueprint, jsonify, request
-from ..models.gold_predict import GoldPricePredictor
-from ..models.live_price import LiveGoldPriceService
-from ..utils.helper import handle_errors
+from backend.models.gold_predict import GoldPricePredictor
+from backend.models.live_price import LiveGoldPriceService
+from backend.utils.helper import handle_errors
 
 api_bp = Blueprint('api', __name__)
 
@@ -48,14 +48,22 @@ def all_prices():
     price_data = price_service.get_best_live_price()
     if not price_data:
         return jsonify({'success': False, 'error': 'Could not fetch prices'}), 500
-    
-    all_karats = price_service.get_all_karat_prices(price_data['price_per_gram_24k'])
+
+    # Get INR conversion rate
+    inr_rate = price_service.get_usd_to_inr_rate()
+
+    # Convert 24K price to INR
+    price_per_gram_24k_inr = price_data['price_per_gram_24k'] * inr_rate
+
+    # Get all karat prices in INR
+    all_karats_inr = price_service.get_all_karat_prices(price_per_gram_24k_inr)
+
     return jsonify({
         'success': True,
         'data': {
             'source': price_data['source'],
             'timestamp': price_data['date'],
-            'prices': all_karats
+            'prices': all_karats_inr
         }
     })
 
@@ -69,3 +77,45 @@ def karat_types():
         {'value': '14K', 'label': '14 Karat', 'purity': 58.3}
     ]
     return jsonify({'karat_types': types})
+@api_bp.route('/calculator')
+@handle_errors
+def calculator():
+    """
+    Gold price calculator endpoint
+    Calculate price for specific weight and karat
+    """
+    karat = request.args.get('karat', '24K')
+    weight = request.args.get('weight', type=float, default=1.0)
+    
+    if karat not in predictor.gold_purities:
+        return jsonify({'success': False, 'error': 'Invalid karat type'}), 400
+    
+    if weight <= 0:
+        return jsonify({'success': False, 'error': 'Weight must be positive'}), 400
+    
+    # Get current price
+    price_data = price_service.get_best_live_price()
+    if not price_data:
+        return jsonify({'success': False, 'error': 'Could not fetch prices'}), 500
+    
+    # Get INR conversion
+    inr_rate = price_service.get_usd_to_inr_rate()
+    price_per_gram_24k = price_data['price_per_gram_24k'] * inr_rate
+    
+    # Convert to selected karat
+    purity = predictor.gold_purities[karat]
+    price_per_gram = price_per_gram_24k * purity
+    total_price = price_per_gram * weight
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'karat': karat,
+            'weight': weight,
+            'price_per_gram': round(price_per_gram, 2),
+            'total_price': round(total_price, 2),
+            'purity': f"{purity * 100}%",
+            'source': price_data['source'],
+            'timestamp': price_data['date']
+        }
+    })

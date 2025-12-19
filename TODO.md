@@ -1,4 +1,0 @@
-- [x] Modify create_features: Change MA_14 to MA_7 and remove dropna
-- [x] Update train_model: Add dropna after create_features
-- [x] Update get_predictions: Add dropna after create_features
-- [x] Test the fix by running the script
