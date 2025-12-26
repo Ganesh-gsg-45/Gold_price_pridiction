@@ -6,9 +6,13 @@ import pandas as pd
 import numpy as np
 import os
 import requests
+import logging
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score, mean_squared_error
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class GoldPricePredictor:
     def __init__(self):
@@ -79,10 +83,10 @@ class GoldPricePredictor:
                 df = df[df['Date'] >= cutoff_date]
                 return df
             else:
-                print(f"Alpha Vantage error: {data.get('Note', 'Unknown error')}")
+                logger.error(f"Alpha Vantage error: {data.get('Note', 'Unknown error')}")
                 return None
         except Exception as e:
-            print(f"Error fetching from Alpha Vantage: {e}")
+            logger.error(f"Error fetching from Alpha Vantage: {e}")
             return None
 
     def fetch_gold_data(self, days=180):
@@ -90,15 +94,15 @@ class GoldPricePredictor:
         # Try Alpha Vantage first
         df = self.fetch_gold_data_alpha_vantage(days)
         if df is not None and not df.empty:
-            print("Fetched data from Alpha Vantage")
-            
+            logger.info("Fetched data from Alpha Vantage")
+
             # Save to data folder
             data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gold_historical_data.csv')
             df.to_csv(data_path, index=False)
-            print(f"Historical data saved to {data_path}")
-            
+            logger.info(f"Historical data saved to {data_path}")
+
             return df
-        
+
         # Fallback to yfinance
         try:
             import yfinance as yf
@@ -108,30 +112,30 @@ class GoldPricePredictor:
             df['Price_Per_Gram'] = df['Close'] / 31.1035  # GC=F is in USD per troy oz
             df['Date'] = pd.to_datetime(df['Date'])
             df = df[['Date', 'Price_Per_Gram']]
-            
+
             if not df.empty:
-                print("Fetched data from yfinance")
-                
+                logger.info("Fetched data from yfinance")
+
                 # Save to data folder
                 data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gold_historical_data.csv')
                 df.to_csv(data_path, index=False)
-                print(f"Historical data saved to {data_path}")
-                
+                logger.info(f"Historical data saved to {data_path}")
+
                 return df
             else:
-                print("No data from yfinance")
+                logger.warning("No data from yfinance")
         except Exception as e:
-            print(f"Error fetching data: {e}")
-        
+            logger.error(f"Error fetching data: {e}")
+
         # Last resort: load from saved CSV
         try:
             data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gold_historical_data.csv')
             df = pd.read_csv(data_path)
             df['Date'] = pd.to_datetime(df['Date'])
-            print("Loaded data from saved CSV")
+            logger.info("Loaded data from saved CSV")
             return df
         except Exception as e:
-            print(f"Error loading saved data: {e}")
+            logger.error(f"Error loading saved data: {e}")
             return None
 
     def create_sequences(self, data, sequence_length):
@@ -183,32 +187,30 @@ class GoldPricePredictor:
         input_shape = (self.sequence_length, 1)
         
         # Train LSTM
-        print(" Training LSTM model...")
+        logger.info("Training LSTM model...")
         lstm_model = self.build_lstm_model(input_shape)
         lstm_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
         lstm_pred = lstm_model.predict(X_val, verbose=0).flatten()
         lstm_r2 = r2_score(y_val, lstm_pred)
         lstm_mse = mean_squared_error(y_val, lstm_pred)
-        
+
         # Train GRU
-        print(" Training GRU model...")
+        logger.info("Training GRU model...")
         gru_model = self.build_gru_model(input_shape)
         gru_model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
         gru_pred = gru_model.predict(X_val, verbose=0).flatten()
         gru_r2 = r2_score(y_val, gru_pred)
         gru_mse = mean_squared_error(y_val, gru_pred)
-        
-        print(f"\nModel Comparison:")
-        print(f"LSTM - R2: {lstm_r2:.4f}, MSE: {lstm_mse:.6f}")
-        print(f"GRU  - R2: {gru_r2:.4f}, MSE: {gru_mse:.6f}")
-        
+
+        logger.info(f"Model Comparison: LSTM - R2: {lstm_r2:.4f}, MSE: {lstm_mse:.6f}; GRU - R2: {gru_r2:.4f}, MSE: {gru_mse:.6f}")
+
         # Select best model (higher R2, lower MSE)
         if lstm_r2 > gru_r2 or (lstm_r2 == gru_r2 and lstm_mse < gru_mse):
             self.model = lstm_model
-            print("Selected: LSTM")
+            logger.info("Selected: LSTM")
         else:
             self.model = gru_model
-            print("Selected: GRU")
+            logger.info("Selected: GRU")
 
     def predict_next_days(self, df, days=5):
         """Predict next days using LSTM"""
@@ -241,44 +243,42 @@ class GoldPricePredictor:
         Get predictions starting from LIVE price
         """
         try:
-            print(f"\n{'='*50}")
-            print(f"Gold Price Prediction - {karat_type}")
-            print(f"{'='*50}\n")
+            logger.info(f"Starting gold price prediction for {karat_type}")
 
             # Get LIVE current price
             if use_live_price:
-                print(" Fetching live gold price...")
+                logger.info("Fetching live gold price...")
                 today_price_24k = self.get_current_live_price()
 
                 if today_price_24k:
-                    print(f" Live price: ₹{today_price_24k:.2f}/gram (24K)")
+                    logger.info(f"Live price: ₹{today_price_24k:.2f}/gram (24K)")
                 else:
-                    print("  Could not fetch live price, using historical data...")
+                    logger.warning("Could not fetch live price, using historical data...")
                     df = self.fetch_gold_data(days=180)
                     if df is None or df.empty:
-                        print("  Failed to fetch historical data for live price fallback")
+                        logger.error("Failed to fetch historical data for live price fallback")
                         return None
                     today_price_24k = df['Price_Per_Gram'].iloc[-1]
             else:
                 # Use historical data
                 df = self.fetch_gold_data(days=180)
                 if df is None or df.empty:
-                    print("  Failed to fetch historical data")
+                    logger.error("Failed to fetch historical data")
                     return None
                 today_price_24k = df['Price_Per_Gram'].iloc[-1]
 
             # Train model on historical data
             df = self.fetch_gold_data(days=180)
             if df is None:
-                print(" Failed to fetch historical data for training")
+                logger.error("Failed to fetch historical data for training")
                 return None
             if len(df) < self.sequence_length + 10:
-                print(" Not enough data for training")
+                logger.error("Not enough data for training")
                 return None
             self.train_model(df)
 
             # Make predictions
-            print(" Generating predictions...")
+            logger.info("Generating predictions...")
             predictions_24k = self.predict_next_days(df, days=5)
 
             # Adjust predictions based on live price
@@ -298,19 +298,15 @@ class GoldPricePredictor:
                           for p in predictions_24k]
 
             # Display results
-            print(f"\n TODAY ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})")
-            print(f"   LIVE Price: ₹{today_price:.2f}/gram\n")
+            logger.info(f"TODAY ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}) - LIVE Price: ₹{today_price:.2f}/gram")
 
-            print(" NEXT 5 DAYS PREDICTIONS:")
+            logger.info("NEXT 5 DAYS PREDICTIONS:")
             for i, pred in enumerate(predictions, 1):
                 date = (datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d')
                 change = pred - today_price
                 change_pct = (change / today_price) * 100
                 arrow = "↑" if change > 0 else "↓"
-
-                print(f"   Day {i} ({date}): ₹{pred:.2f} {arrow} {change_pct:+.2f}%")
-
-            print(f"\n{'='*50}\n")
+                logger.info(f"Day {i} ({date}): ₹{pred:.2f} {arrow} {change_pct:+.2f}%")
 
             # Save predictions to data folder
             pred_dates = [(datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, 6)]
@@ -320,7 +316,7 @@ class GoldPricePredictor:
             })
             pred_path = os.path.join(os.path.dirname(__file__), '..', 'data', f'gold_predictions_{karat_type}_{datetime.now().strftime("%Y%m%d")}.csv')
             pred_df.to_csv(pred_path, index=False)
-            print(f"Predictions saved to {pred_path}")
+            logger.info(f"Predictions saved to {pred_path}")
 
             return {
                 'karat_type': karat_type,
@@ -330,9 +326,9 @@ class GoldPricePredictor:
                 'source': 'Live Market Data' if use_live_price else 'Historical Data'
             }
         except Exception as e:
-            print(f"Error in get_predictions: {str(e)}")
+            logger.error(f"Error in get_predictions: {str(e)}")
             import traceback
-            traceback.print_exc()
+            logger.error(traceback.format_exc())
             return None
 
 

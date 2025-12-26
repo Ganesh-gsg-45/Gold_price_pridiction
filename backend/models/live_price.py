@@ -1,15 +1,21 @@
 import requests
 import os
+import logging
 from dotenv import load_dotenv
 from datetime import datetime
 
-load_dotenv()
+# Set up logger
+logger = logging.getLogger(__name__)
+
+# Load environment variables from backend/.env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 class LiveGoldPriceService:
     def __init__(self):
         # Get API key from .env
         self.goldapi_key = os.getenv('GOLDAPI_KEY')
         self.metals_api_key = os.getenv('METALS_API_KEY')
+        self.alphavantage_api_key = os.getenv('ALPHAVANTAGE_KEY')
 
         self.gold_purities = {
             '24K': 1.0,
@@ -46,14 +52,14 @@ class LiveGoldPriceService:
             if response.status_code == 200 and 'rates' in data:
                 self.usd_to_inr_rate = data['rates'].get('INR', 83.0)  # Fallback to ~83 INR/USD
                 self.rate_timestamp = datetime.now()
-                print(f"💱 USD to INR rate: {self.usd_to_inr_rate}")
+                logger.info(f"USD to INR rate: {self.usd_to_inr_rate}")
                 return self.usd_to_inr_rate
             else:
-                print("❌ Could not fetch currency conversion rate")
+                logger.warning("Could not fetch currency conversion rate")
                 return 83.0  # Fallback rate
 
         except Exception as e:
-            print(f"❌ Error fetching currency rate: {e}")
+            logger.error(f"Error fetching currency rate: {e}")
             return 83.0  # Fallback rate
     
     def get_live_gold_price_goldapi(self):
@@ -62,7 +68,7 @@ class LiveGoldPriceService:
         Most accurate - shows actual market rates
         """
         if not self.goldapi_key:
-            print("❌ No GoldAPI key found. Get one at https://www.goldapi.io/")
+            logger.warning("No GoldAPI key found. Get one at https://www.goldapi.io/")
             return None
         
         url = "https://www.goldapi.io/api/XAU/USD"
@@ -91,20 +97,20 @@ class LiveGoldPriceService:
                     'raw_data': data
                 }
             else:
-                print(f"❌ GoldAPI Error: {data.get('message', 'Unknown error')}")
+                logger.error(f"GoldAPI Error: {data.get('message', 'Unknown error')}")
                 return None
-                
+
         except Exception as e:
-            print(f"❌ Error fetching from GoldAPI: {e}")
+            logger.error(f"Error fetching from GoldAPI: {e}")
             return None
-    
+
     def get_live_gold_price_metals_api(self):
         """
         Get live gold price from Metals-API.com
         Alternative source - also very accurate
         """
         if not self.metals_api_key:
-            print("❌ No Metals-API key found. Get one at https://metals-api.com/")
+            logger.warning("No Metals-API key found. Get one at https://metals-api.com/")
             return None
         
         url = f"https://metals-api.com/api/latest"
@@ -134,13 +140,13 @@ class LiveGoldPriceService:
                     'raw_data': data
                 }
             else:
-                print(f"❌ Metals-API Error: {data.get('error', {}).get('info', 'Unknown error')}")
+                logger.error(f"Metals-API Error: {data.get('error', {}).get('info', 'Unknown error')}")
                 return None
-                
+
         except Exception as e:
-            print(f"❌ Error fetching from Metals-API: {e}")
+            logger.error(f"Error fetching from Metals-API: {e}")
             return None
-    
+
     def get_live_gold_price_yahoo(self):
         """
         Get live gold price from Yahoo Finance (FREE - No API key needed)
@@ -148,19 +154,19 @@ class LiveGoldPriceService:
         """
         try:
             import yfinance as yf
-            
+
             # GC=F is Gold Futures
             # GLD is Gold ETF (more stable)
             gold = yf.Ticker("GC=F")
-            
+
             # Get current price
             data = gold.history(period="1d", interval="1m")
-            
+
             if not data.empty:
                 latest_price = data['Close'].iloc[-1]
                 # Gold futures are in USD per troy ounce
                 price_per_gram = latest_price / 31.1035
-                
+
                 return {
                     'source': 'Yahoo Finance',
                     'price_per_gram_24k': round(price_per_gram, 2),
@@ -170,31 +176,78 @@ class LiveGoldPriceService:
                     'date': data.index[-1].strftime('%Y-%m-%d %H:%M:%S'),
                     'raw_data': data.iloc[-1].to_dict()
                 }
-            
+
             return None
-            
+
         except Exception as e:
-            print(f"❌ Error fetching from Yahoo: {e}")
+            logger.error(f"Error fetching from Yahoo: {e}")
             return None
-    
+
+    def get_live_gold_price_alphavantage(self):
+        """
+        Get live gold price from Alpha Vantage API
+        Uses GLD (Gold ETF) as a proxy for gold prices
+        Good alternative source
+        """
+        if not self.alphavantage_api_key:
+            logger.warning("No Alpha Vantage API key found. Get one at https://www.alphavantage.co/")
+            return None
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            'function': 'GLOBAL_QUOTE',
+            'symbol': 'GLD',  # SPDR Gold Shares ETF
+            'apikey': self.alphavantage_api_key
+        }
+
+        try:
+            response = requests.get(url, params=params)
+            data = response.json()
+
+            if response.status_code == 200 and 'Global Quote' in data:
+                quote = data['Global Quote']
+                price_per_share = float(quote['05. price'])
+
+                # GLD ETF holds gold, each share represents ~0.1 troy ounces of gold
+                # So price per share / 0.1 = price per troy ounce
+                price_per_oz = price_per_share / 0.1
+                price_per_gram = price_per_oz / 31.1035
+
+                return {
+                    'source': 'Alpha Vantage (GLD ETF)',
+                    'price_per_gram_24k': round(price_per_gram, 2),
+                    'price_per_oz': round(price_per_oz, 2),
+                    'currency': 'USD',
+                    'timestamp': int(datetime.now().timestamp()),
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'raw_data': data
+                }
+            else:
+                logger.error(f"Alpha Vantage Error: {data.get('Error Message', 'Unknown error')}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error fetching from Alpha Vantage: {e}")
+            return None
+
     def get_best_live_price(self):
         """
         Try multiple sources and return the best available price
-        Priority: GoldAPI > Metals-API > Yahoo Finance > Sample Data
+        Priority: GoldAPI > Metals-API > Yahoo Finance > Alpha Vantage > Sample Data
         Uses caching to avoid excessive API calls
         """
         # Check cache first
         if self.price_cache and self.price_cache_timestamp:
             if (datetime.now() - self.price_cache_timestamp).seconds < self.cache_duration:
-                print("📋 Using cached price data")
+                logger.info("Using cached price data")
                 return self.price_cache
 
-        print("🔍 Fetching live gold prices...\n")
+        logger.info("Fetching live gold prices...")
 
         # Try GoldAPI first (most accurate)
         price_data = self.get_live_gold_price_goldapi()
         if price_data:
-            print(f"✅ Got price from {price_data['source']}")
+            logger.info(f"Got price from {price_data['source']}")
             self.price_cache = price_data
             self.price_cache_timestamp = datetime.now()
             return price_data
@@ -202,7 +255,7 @@ class LiveGoldPriceService:
         # Try Metals-API
         price_data = self.get_live_gold_price_metals_api()
         if price_data:
-            print(f"✅ Got price from {price_data['source']}")
+            logger.info(f"Got price from {price_data['source']}")
             self.price_cache = price_data
             self.price_cache_timestamp = datetime.now()
             return price_data
@@ -210,13 +263,21 @@ class LiveGoldPriceService:
         # Try Yahoo Finance (free backup)
         price_data = self.get_live_gold_price_yahoo()
         if price_data:
-            print(f"✅ Got price from {price_data['source']}")
+            logger.info(f"Got price from {price_data['source']}")
+            self.price_cache = price_data
+            self.price_cache_timestamp = datetime.now()
+            return price_data
+
+        # Try Alpha Vantage (additional backup)
+        price_data = self.get_live_gold_price_alphavantage()
+        if price_data:
+            logger.info(f"Got price from {price_data['source']}")
             self.price_cache = price_data
             self.price_cache_timestamp = datetime.now()
             return price_data
 
         # Fallback to sample data
-        print("⚠️ All APIs failed, using sample data")
+        logger.warning("All APIs failed, using sample data")
         price_data = self.get_sample_live_price()
         self.price_cache = price_data
         self.price_cache_timestamp = datetime.now()
@@ -272,13 +333,11 @@ class LiveGoldPriceService:
         price_per_gram_24k_inr = round(price_data['price_per_gram_24k'] * inr_rate, 2)
         price_per_oz_inr = round(price_data['price_per_oz'] * inr_rate, 2)
 
-        print(f"\n{'='*60}")
-        print(f"💰 LIVE GOLD PRICES - {price_data['date']}")
-        print(f"{'='*60}")
-        print(f"📍 Source: {price_data['source']}")
-        print(f"💵 Currency: INR (₹) | USD Rate: ₹{inr_rate}/$")
-        print(f"\n24K Gold (Pure): ₹{price_per_gram_24k_inr}/gram")
-        print(f"             or: ₹{price_per_oz_inr}/troy oz")
+        logger.info(f"LIVE GOLD PRICES - {price_data['date']}")
+        logger.info(f"Source: {price_data['source']}")
+        logger.info(f"Currency: INR (₹) | USD Rate: ₹{inr_rate}/$")
+        logger.info(f"24K Gold (Pure): ₹{price_per_gram_24k_inr}/gram")
+        logger.info(f"             or: ₹{price_per_oz_inr}/troy oz")
 
         # Get all karat prices in INR
         all_prices_usd = self.get_all_karat_prices(price_data['price_per_gram_24k'])
@@ -292,15 +351,11 @@ class LiveGoldPriceService:
                 'purity': data['purity']
             }
 
-        print(f"\n{'─'*60}")
-        print("All Karat Types:")
-        print(f"{'─'*60}")
+        logger.info("All Karat Types:")
 
         for karat, data in all_prices_inr.items():
-            print(f"{karat:4s} ({data['purity']:6s}): ₹{data['price_per_gram']:7.2f}/gram  "
+            logger.info(f"{karat:4s} ({data['purity']:6s}): ₹{data['price_per_gram']:7.2f}/gram  "
                   f"₹{data['price_per_10g']:8.2f}/10g  ₹{data['price_per_oz']:9.2f}/oz")
-
-        print(f"{'='*60}\n")
 
         # Update price_data with INR prices
         price_data_inr = price_data.copy()
@@ -323,8 +378,8 @@ class LiveGoldPriceService:
 if __name__ == "__main__":
     service = LiveGoldPriceService()
     result = service.display_live_prices()
-    
+
     if result:
-        print("✅ Successfully fetched live gold prices!")
+        logger.info("Successfully fetched live gold prices!")
     else:
-        print("❌ Failed to fetch live prices. Check your API keys.")
+        logger.error("Failed to fetch live prices. Check your API keys.")

@@ -36,7 +36,7 @@ def live_price():
             for karat, data in result['all_karats'].items():
                 save_today_price(karat, data['price_per_gram'])
         except Exception as e:
-            print(f"⚠️ Could not save to database: {e}")
+            logger.warning(f"Could not save to database: {e}")
         return jsonify({'success': True, 'data': result})
     return jsonify({'success': False, 'error': 'Could not fetch live prices. Using sample data instead.'}), 200
 
@@ -52,7 +52,7 @@ def predict():
         try:
             save_predictions(karat, result['predictions'])
         except Exception as e:
-            print(f"⚠️ Could not save predictions to database: {e}")
+            logger.warning(f"Could not save predictions to database: {e}")
         return jsonify({'success': True, 'data': result})
     except Exception as e:
         print(f"Error in predict endpoint: {str(e)}")
@@ -92,7 +92,7 @@ def historical_prices():
         import pandas as pd
         data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'gold_historical_data.csv')
         df = pd.read_csv(data_path)
-        df['Date'] = pd.to_datetime(df['Date'])
+        df['Date'] = pd.to_datetime(df['Date'], utc=True)
         
         # Get last 5 days (excluding today), sorted descending (most recent first)
         from datetime import datetime

@@ -3,12 +3,25 @@ Main Flask Application
 """
 
 import os
+import logging
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from config import config
+from config import config, Config
 from routes.api import api_bp
 from supabase_client import authenticate_user, register_user
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Validate configuration on startup
+try:
+    Config.validate_config()
+    logger.info(" Configuration validation passed")
+except ValueError as e:
+    logger.error(f" Configuration error: {e}")
+    raise
 
 class User(UserMixin):
     def __init__(self, id, email):
@@ -108,7 +121,7 @@ def create_app(config_name='default'):
 
 if __name__ == '__main__':
     app = create_app('development')
-    print("\n🚀 Gold Price Predictor Server")
-    print("📍 http://localhost:5000")
-    print("="*50 + "\n")
+    logger.info("🚀 Gold Price Predictor Server starting...")
+    logger.info("📍 http://localhost:5000")
+    logger.info("="*50)
     app.run(host='127.0.0.1', port=5000, debug=True)

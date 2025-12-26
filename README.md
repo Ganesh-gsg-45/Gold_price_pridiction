@@ -1,15 +1,18 @@
 #  Gold Price Predictor
 
-AI-powered gold price prediction system with real-time market data and machine learning forecasts.
+AI-powered gold price prediction system with real-time market data, machine learning forecasts, and user authentication.
 
 ##  Features
 
--  **Real-time Prices** - Live gold prices in INR from multiple sources
--  **ML Predictions** - 5-day price forecasts using Random Forest
-- **Multiple Types** - Support for 24K, 22K, 18K, and 14K gold
--  **Beautiful UI** - Modern, responsive web interface
--  **Price Trends** - Visual charts with percentage changes
--  **Auto-fallback** - Multiple API sources for reliability
+-  **Real-time Prices** - Live gold prices in INR from multiple sources with 5-minute caching
+-  **ML Predictions** - 5-day price forecasts using Random Forest regression
+- **Multiple Types** - Support for 24K, 22K, 18K, and 14K gold with automatic purity calculations
+-  **User Authentication** - Secure login/registration with Supabase backend
+-  **Beautiful UI** - Modern, responsive web interface with login and calculator pages
+-  **Price Calculator** - Calculate gold prices for specific weights and karats
+-  **Auto-fallback** - Multiple API sources for reliability (GoldAPI, Metals-API, Yahoo Finance)
+-  **Security** - Input validation, error handling, and secure configuration
+-  **Logging** - Proper logging system instead of console prints
 
 ##  Quick Start
 

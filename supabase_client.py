@@ -1,7 +1,11 @@
 import os
+import logging
 from datetime import timedelta, datetime
 import bcrypt
 from dotenv import load_dotenv
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,8 +15,8 @@ try:
     from supabase import create_client
     SUPABASE_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ Supabase import failed: {e}")
-    print("Using fallback in-memory storage for user authentication")
+    logger.warning(f"Supabase import failed: {e}")
+    logger.info("Using fallback in-memory storage for user authentication")
     SUPABASE_AVAILABLE = False
     create_client = None
 
@@ -23,8 +27,8 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
 
 # Validate that we have the required environment variables
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    print("⚠️ Supabase credentials not found in environment variables")
-    print("Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file")
+    logger.warning("Supabase credentials not found in environment variables")
+    logger.info("Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file")
     SUPABASE_AVAILABLE = False
 
 # For now, use a simple in-memory storage as fallback
@@ -48,21 +52,17 @@ def get_supabase_client(use_service_role=False):
         else:
             return create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
     except Exception as e:
-        print(f"Failed to create Supabase client: {e}")
+        logger.error(f"Failed to create Supabase client: {e}")
         return None
 
 def register_user(email, password, username=None):
     """Register a new user"""
-    # Debug: Print service role key status
-    print(f"🔍 SUPABASE_SERVICE_ROLE_KEY loaded: {'Yes' if SUPABASE_SERVICE_ROLE_KEY else 'No'}")
-    print(f"🔍 Key length: {len(SUPABASE_SERVICE_ROLE_KEY) if SUPABASE_SERVICE_ROLE_KEY else 0}")
+    logger.debug(f"Attempting to register user: {email}")
 
     # Check if we have service role key for registration
     if not SUPABASE_SERVICE_ROLE_KEY:
-        print("⚠️ SUPABASE_SERVICE_ROLE_KEY not configured in .env file")
-        print("   User registration will use temporary storage")
-        print("   To fix: Add SUPABASE_SERVICE_ROLE_KEY to your .env file")
-        print("   Get it from: Supabase Dashboard > Settings > API > service_role key")
+        logger.warning("SUPABASE_SERVICE_ROLE_KEY not configured - using temporary storage")
+        logger.warning("To enable persistent registration, add SUPABASE_SERVICE_ROLE_KEY to .env")
     else:
         supabase = get_supabase_client(use_service_role=True)  # Use service role for registration
 
@@ -71,6 +71,7 @@ def register_user(email, password, username=None):
                 # Check if user exists
                 existing = supabase.table("users").select("*").eq("email", email).execute()
                 if existing.data:
+                    logger.info(f"Registration failed: User {email} already exists")
                     return False, "User already exists"
 
                 # Hash password
@@ -85,14 +86,15 @@ def register_user(email, password, username=None):
                 }
 
                 result = supabase.table("users").insert(user_data).execute()
-
+                logger.info(f"User {email} registered successfully in Supabase")
                 return True, "User registered successfully"
             except Exception as e:
-                print(f"Supabase registration failed: {e}")
-                print("Falling back to temporary storage")
+                logger.error(f"Supabase registration failed for {email}: {e}")
+                logger.warning("Falling back to temporary storage")
 
     # Fallback to in-memory storage
     if email in users_db:
+        logger.info(f"Registration failed: User {email} already exists in temporary storage")
         return False, "User already exists"
 
     users_db[email] = {
@@ -101,44 +103,50 @@ def register_user(email, password, username=None):
         'id': len(users_db) + 1,
         'username': username
     }
-    print("⚠️ Using in-memory storage (data will be lost on restart)")
+    logger.warning("Using in-memory storage for user registration (data will be lost on restart)")
     return True, "User registered successfully (temporary storage)"
 
 def authenticate_user(email, password):
     """Authenticate user login"""
+    logger.debug(f"Attempting authentication for user: {email}")
     supabase = get_supabase_client(use_service_role=True)  # Use service role for admin operations
 
     if supabase:
         try:
             user = supabase.table("users").select("*").eq("email", email).execute()
             if not user.data:
+                logger.info(f"Authentication failed: User {email} not found")
                 return False, "User not found"
 
             user_data = user.data[0]
             if check_password(password, user_data['password_hash']):
+                logger.info(f"User {email} authenticated successfully")
                 return True, user_data
             else:
+                logger.info(f"Authentication failed: Invalid password for {email}")
                 return False, "Invalid password"
         except Exception as e:
-            print(f"Supabase authentication failed: {e}")
+            logger.error(f"Supabase authentication failed for {email}: {e}")
             # Fall through to in-memory storage
 
     # Fallback to in-memory storage
     if email in users_db:
         user_data = users_db[email]
         if check_password(password, user_data['password_hash']):
+            logger.info(f"User {email} authenticated successfully via temporary storage")
             return True, {
                 'id': user_data['id'],
                 'email': email,
                 'created_at': user_data['created_at']
             }
+    logger.info(f"Authentication failed for {email}")
     return False, "Authentication failed"
 
 def save_today_price(karat, price):
     """Save today's price to database (optional)"""
     supabase = get_supabase_client()
     if not supabase:
-        print("⚠️ Supabase not available, skipping price save")
+        logger.warning("Supabase not available, skipping price save")
         return
 
     try:
@@ -147,14 +155,15 @@ def save_today_price(karat, price):
             "karat": karat,
             "price_per_gram": price
         }).execute()
+        logger.info(f"Saved today's price for {karat}: ₹{price}/gram")
     except Exception as e:
-        print(f"⚠️ Failed to save price to database: {e}")
+        logger.error(f"Failed to save price to database: {e}")
 
 def save_predictions(karat, predictions):
     """Save predictions to database (optional)"""
     supabase = get_supabase_client()
     if not supabase:
-        print("⚠️ Supabase not available, skipping predictions save")
+        logger.warning("Supabase not available, skipping predictions save")
         return
 
     try:
@@ -164,6 +173,7 @@ def save_predictions(karat, predictions):
                 "karat": karat,
                 "predicted_price": price
             }).execute()
+        logger.info(f"Saved {len(predictions)} predictions for {karat}")
     except Exception as e:
-        print(f"⚠️ Failed to save predictions to database: {e}")
+        logger.error(f"Failed to save predictions to database: {e}")
       

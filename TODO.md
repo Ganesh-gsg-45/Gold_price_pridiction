@@ -39,7 +39,7 @@
 
 ### Code Quality
 - [ ] Add type hints to more functions (models, routes)
-- [ ] Implement proper logging instead of print statements
+- [x] Implement proper logging instead of print statements
 - [ ] Add configuration validation
 - [ ] Refactor duplicate code in price fetching logic
 
