@@ -32,21 +32,62 @@ body {
 }
 
 header {
-    text-align: center;
     margin-bottom: 40px;
-    padding: 30px 0;
+    padding: 20px 0;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
 }
 
-header h1 {
-    font-size: 2.5rem;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo h1 {
+    font-size: 2rem;
     color: var(--gold-dark);
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-header p {
-    font-size: 1.1rem;
+.logo p {
+    font-size: 1rem;
     color: var(--text-secondary);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info span {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.logout-btn {
+    background: var(--gold-primary);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.logout-btn:hover {
+    background: var(--gold-secondary);
+    transform: translateY(-1px);
+}
+
+.logout-btn i {
+    margin-right: 5px;
 }
 
 .main-content {
@@ -61,8 +102,14 @@ header p {
     }
 }
 
+@media (min-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
 /* Cards */
-.live-price-card, .prediction-controls {
+.live-price-card, .historical-price-card, .prediction-controls {
     background: var(--bg-secondary);
     border-radius: var(--border-radius);
     padding: 25px;
@@ -70,7 +117,7 @@ header p {
     border: 2px solid var(--gold-primary);
 }
 
-.live-price-card h2, .prediction-controls h2 {
+.live-price-card h2, .historical-price-card h2, .prediction-controls h2 {
     color: var(--gold-dark);
     margin-bottom: 20px;
     font-size: 1.5rem;
@@ -117,6 +164,69 @@ header p {
     border-radius: 6px;
     color: var(--text-primary);
     font-size: 0.9rem;
+}
+
+/* Historical Prices */
+#historical-prices {
+    font-family: 'Courier New', monospace;
+}
+
+.historical-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.historical-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    border-left: 3px solid var(--gold-secondary);
+}
+
+.historical-date {
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.historical-price {
+    font-weight: bold;
+    color: var(--gold-dark);
+}
+
+/* Loading and Error States */
+.loading, .error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    min-height: 100px;
+}
+
+.loading i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: var(--gold-primary);
+    animation: spin 1s linear infinite;
+}
+
+.error {
+    color: #e74c3c;
+}
+
+.error i {
+    color: #e74c3c;
+    margin-right: 10px;
+    font-size: 1.5rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 /* Controls */

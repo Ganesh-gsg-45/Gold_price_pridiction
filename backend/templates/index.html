@@ -11,8 +11,18 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-coins"></i> Gold Price Predictor</h1>
-            <p>Real-time market data with AI-powered predictions</p>
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-coins"></i> Gold Price Predictor</h1>
+                    <p>Real-time market data with AI-powered predictions</p>
+                </div>
+                <div class="user-info">
+                    <span>Welcome, {{ current_user.email }}</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
         </header>
 
         <div class="main-content">
@@ -22,6 +32,15 @@
                 <div id="live-prices" class="loading">
                     <div><i class="fas fa-spinner fa-spin"></i></div>
                     <div>Loading live gold prices...</div>
+                </div>
+            </div>
+
+            <!-- Historical Prices Card -->
+            <div class="historical-price-card">
+                <h2><i class="fas fa-history"></i> Past 5 Days Prices</h2>
+                <div id="historical-prices" class="loading">
+                    <div><i class="fas fa-spinner fa-spin"></i></div>
+                    <div>Loading historical prices...</div>
                 </div>
             </div>
 

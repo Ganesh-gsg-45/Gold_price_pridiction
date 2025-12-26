@@ -9,6 +9,7 @@ class GoldPriceApp {
     init() {
         this.bindEvents();
         this.loadLivePrices();
+        this.loadHistoricalPrices();
     }
 
     bindEvents() {
@@ -49,8 +50,11 @@ class GoldPriceApp {
         // Header info
         const header = document.createElement('div');
         header.className = 'source-info';
+        const sourceText = baseData.source.includes('Sample') ? 
+            `<strong>⚠️ Source:</strong> ${baseData.source} (Demo Data)` : 
+            `<strong>📍 Source:</strong> ${baseData.source}`;
         header.innerHTML = `
-            <strong>📍 Source:</strong> ${baseData.source} |
+            ${sourceText} |
             <strong>⏰ Updated:</strong> ${baseData.date}
         `;
         container.appendChild(header);
@@ -70,6 +74,48 @@ class GoldPriceApp {
         });
 
         container.appendChild(priceGrid);
+    }
+
+    async loadHistoricalPrices() {
+        try {
+            this.showLoading('historical-prices', 'Loading historical prices...');
+            const response = await fetch('/api/historical-prices');
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayHistoricalPrices(data.data);
+            } else {
+                this.showError('historical-prices', 'Failed to load historical prices');
+            }
+        } catch (error) {
+            console.error('Error loading historical prices:', error);
+            this.showError('historical-prices', 'Network error loading historical data');
+        }
+    }
+
+    displayHistoricalPrices(historicalData) {
+        const container = document.getElementById('historical-prices');
+        container.innerHTML = '';
+
+        if (!historicalData || historicalData.length === 0) {
+            container.innerHTML = '<div>No historical data available</div>';
+            return;
+        }
+
+        const historicalGrid = document.createElement('div');
+        historicalGrid.className = 'historical-grid';
+
+        historicalData.forEach(item => {
+            const historicalItem = document.createElement('div');
+            historicalItem.className = 'historical-item';
+            historicalItem.innerHTML = `
+                <span class="historical-date">${item.date}</span>
+                <span class="historical-price">₹${item.price_inr}/g</span>
+            `;
+            historicalGrid.appendChild(historicalItem);
+        });
+
+        container.appendChild(historicalGrid);
     }
 
     async getPredictions() {

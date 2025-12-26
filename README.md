@@ -128,7 +128,7 @@ Returns available gold types and purities.
 ##  Testing
 ```bash
 # Test imports
-python -c "from models.gold_predict import GoldPricePredictor; print('✅ Imports working')"
+python -c "from models.gold_predict import GoldPricePredictor; print(' Imports working')"
 
 # Test predictor
 cd backend/models

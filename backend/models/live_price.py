@@ -22,6 +22,11 @@ class LiveGoldPriceService:
         self.usd_to_inr_rate = None
         self.rate_timestamp = None
 
+        # Cache for price data
+        self.price_cache = None
+        self.price_cache_timestamp = None
+        self.cache_duration = 300  # 5 minutes in seconds
+
     def get_usd_to_inr_rate(self):
         """
         Get USD to INR conversion rate
@@ -175,30 +180,64 @@ class LiveGoldPriceService:
     def get_best_live_price(self):
         """
         Try multiple sources and return the best available price
-        Priority: GoldAPI > Metals-API > Yahoo Finance
+        Priority: GoldAPI > Metals-API > Yahoo Finance > Sample Data
+        Uses caching to avoid excessive API calls
         """
+        # Check cache first
+        if self.price_cache and self.price_cache_timestamp:
+            if (datetime.now() - self.price_cache_timestamp).seconds < self.cache_duration:
+                print("📋 Using cached price data")
+                return self.price_cache
+
         print("🔍 Fetching live gold prices...\n")
-        
+
         # Try GoldAPI first (most accurate)
         price_data = self.get_live_gold_price_goldapi()
         if price_data:
             print(f"✅ Got price from {price_data['source']}")
+            self.price_cache = price_data
+            self.price_cache_timestamp = datetime.now()
             return price_data
-        
+
         # Try Metals-API
         price_data = self.get_live_gold_price_metals_api()
         if price_data:
             print(f"✅ Got price from {price_data['source']}")
+            self.price_cache = price_data
+            self.price_cache_timestamp = datetime.now()
             return price_data
-        
+
         # Try Yahoo Finance (free backup)
         price_data = self.get_live_gold_price_yahoo()
         if price_data:
             print(f"✅ Got price from {price_data['source']}")
+            self.price_cache = price_data
+            self.price_cache_timestamp = datetime.now()
             return price_data
+
+        # Fallback to sample data
+        print("⚠️ All APIs failed, using sample data")
+        price_data = self.get_sample_live_price()
+        self.price_cache = price_data
+        self.price_cache_timestamp = datetime.now()
+        return price_data
+    
+    def get_sample_live_price(self):
+        """
+        Return sample live price data when APIs are unavailable
+        """
+        # Sample price around current market rates (as of 2024)
+        sample_price_per_gram = 86.5  # USD per gram 24K
         
-        print("❌ Could not fetch live prices from any source")
-        return None
+        return {
+            'source': 'Sample Data (APIs Unavailable)',
+            'price_per_gram_24k': sample_price_per_gram,
+            'price_per_oz': round(sample_price_per_gram * 31.1035, 2),
+            'currency': 'USD',
+            'timestamp': int(datetime.now().timestamp()),
+            'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'raw_data': {'note': 'Sample data used because APIs are unavailable'}
+        }
     
     def get_all_karat_prices(self, base_price_24k):
         """
